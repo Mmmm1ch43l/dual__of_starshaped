@@ -1,0 +1,14 @@
+name = "dual_of_starshaped"
+version = "0.1.0"
+defaultTargets = ["dual_of_starshaped"]
+
+[[lean_lib]]
+name = "DualOfStarshaped"
+
+[[lean_exe]]
+name = "dual_of_starshaped"
+root = "Main"
+
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"
