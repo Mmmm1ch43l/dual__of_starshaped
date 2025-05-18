@@ -1,8 +1,4 @@
-import Mathlib.Analysis.Calculus.ContDiff.Defs
-import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
-import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
-import Mathlib.Analysis.Normed.Group.Basic
-import Mathlib.Analysis.InnerProductSpace.LinearMap
+import Mathlib
 
 open Real
 
@@ -54,7 +50,7 @@ lemma polygonalApproximation (f : ℝ → ℝ) (hf : symmetricAdmissibleFunction
   sorry
 
 theorem systolicInequalityForPolygons (p : starshapedPolygon) (hp : admissiblePolygon p)(hs : symmetricStarshapedPolygon p) :
-    polygonArea p ≥ (4 : ℚ)/(3 : ℚ) :=
+    polygonArea p ≥ (4 : ℚ) / (3 : ℚ) :=
   sorry
 
 lemma nonOptimality (f : ℝ → ℝ) (hf : symmetricAdmissibleFunction f) :
@@ -63,26 +59,22 @@ lemma nonOptimality (f : ℝ → ℝ) (hf : symmetricAdmissibleFunction f) :
   sorry
 
 theorem systolicInequality (f : ℝ → ℝ) (hf : symmetricAdmissibleFunction f) :
-    integrate f > (4 : ℝ)/(3 : ℝ) :=
+    integrate f > (4 : ℝ) / (3 : ℝ) :=
   by
+  -- assume integrate f ≤ 4/3
   by_contra h
   rw [not_lt] at h
-  have strict : ∃ g : ℝ → ℝ, symmetricAdmissibleFunction g ∧
-    integrate g < integrate f := nonOptimality f hf
-  obtain ⟨g, hg⟩ := strict
-  have approximation : ∀ ε > 0, ∃ p : starshapedPolygon, admissiblePolygon p ∧
-    symmetricStarshapedPolygon p ∧
-    polygonArea p < ε + integrate g := polygonalApproximation g hg.1
-  let δ := (4 : ℝ)/(3 : ℝ) - integrate g
-  have hδ : δ > 0 := sub_pos_of_lt (lt_of_lt_of_le hg.2 h)
-  obtain ⟨p, hp⟩ := approximation (δ) (hδ)
-  have hc : polygonArea p < (4 : ℝ)/(3 : ℝ) := sorry
-  have hc2 : polygonArea p < (4 : ℚ)/(3 : ℚ) := sorry
-  have contradiction : polygonArea p ≥ (4 : ℚ)/(3 : ℚ) := systolicInequalityForPolygons p hp.1 hp.2.1
-  have ncontradiction : ¬ polygonArea p < (4 : ℚ)/(3 : ℚ) := sorry
-  exact (hc2 ∧ ncontradiction)
+  -- use non optimality to get integrate g < 4/3
+  obtain ⟨g, hg⟩ := nonOptimality f hf
+  -- use polygonal approximation to get a polygon p with area < 4/3
+  obtain ⟨p, hp⟩ := polygonalApproximation g hg.1 ((4 : ℝ) / (3 : ℝ) - integrate g) (sub_pos_of_lt (lt_of_lt_of_le hg.2 h))
+  have hcoe : (4 : ℝ) / (3 : ℝ) = ↑((4 : ℚ) / (3 : ℚ)) := (Rat.cast_div (4 : ℚ) (3 : ℚ)).symm
+  rw [sub_add_cancel, hcoe, Rat.cast_lt] at hp
+  -- conclude with the systolic inequality for polygons
+  exact not_le_of_gt hp.2.2 (systolicInequalityForPolygons p hp.1 hp.2.1)
+
 
 theorem systolicInequalityIsSharp :
     ∀ ε > 0, ∃ f : ℝ → ℝ, symmetricAdmissibleFunction f ∧
-    integrate f < (4 : ℝ)/(3 : ℝ) + ε :=
+    integrate f < (4 : ℝ) / (3 : ℝ) + ε :=
   sorry
