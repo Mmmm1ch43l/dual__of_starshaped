@@ -20,20 +20,21 @@ namespace polygons
     succ2 (i : Fin n) : Fin n := Fin.ofNat' n (i + 2)
     succ3 (i : Fin n) : Fin n := Fin.ofNat' n (i + 3)
     vertices : Fin n → ℚ × ℚ
-    isStarshaped : ∀ i j : Fin n, j = (i + 1) % n → cross (vertices i) (vertices j) > 0
+    isStarshaped : ∀ i : Fin n, cross (vertices i) (vertices (succ i)) > 0
     simple : ∃! i : Fin n, (vertices i).1 ≤ 0 ∧ (vertices (succ i)).1 > 0
 
   def convex (P : starshaped) : Prop :=
-    ∀ i j k : Fin P.n, j = (i + 1) % P.n ∧ k = (i + 2) % P.n →
+    ∀ i : Fin P.n, let j := P.succ i; let k := P.succ2 i
     cross (P.vertices j - P.vertices i) (P.vertices k - P.vertices j) > 0
 
   def area (P : starshaped) : ℚ :=
     ∑ i : Fin P.n, (cross (P.vertices i) (P.vertices (P.succ i)))/2
 
   def admissible (P : starshaped) : Prop :=
-    ∀ i j k l : Fin P.n, j = (i + 1) % P.n ∧ k = (i + 2) % P.n ∧ l = (i + 3) % P.n ∧ ∀ p q : ℤ, Int.gcd p q = 1 →
+    ∀ i : Fin P.n, let j := P.succ i; let k := P.succ2 i; let l := P.succ3 i
     -- check no degenerate vertices
     (cross (P.vertices j - P.vertices i) (P.vertices k - P.vertices j) ≠ 0) ∧
+    ∀ p q : ℤ, Int.gcd p q = 1 →
     -- check tangencies at vertices
     (cross (p, q) (rotateRight (P.vertices j - P.vertices i)) < 0 ∧
     cross (p, q) (rotateRight (P.vertices k - P.vertices j)) > 0 ∨
@@ -59,8 +60,52 @@ namespace polygons
 
   theorem systolicInequalityIsSharp :
       ∃ P : starshaped, admissible P ∧ symmetric P ∧
-      area P = (4 : ℚ) / (3 : ℚ) :=
-    sorry
+      area P = (4 : ℚ) / (3 : ℚ) := by
+    let P : starshaped := {
+      n := 8,
+      nonEmpty := by norm_num,
+      vertices := λ i : Fin 8 ↦ match i with
+        | ⟨0, _⟩ => ((1 : ℚ), (1 : ℚ) / (3 : ℚ))
+        | ⟨1, _⟩ => ((1 : ℚ) / (3 : ℚ), (1 : ℚ) / (3 : ℚ))
+        | ⟨2, _⟩ => ((-1 : ℚ) / (3 : ℚ), (1 : ℚ))
+        | ⟨3, _⟩ => ((-1 : ℚ) / (3 : ℚ), (1 : ℚ) / (3 : ℚ))
+        | ⟨4, _⟩ => ((-1 : ℚ), (-1 : ℚ) / (3 : ℚ))
+        | ⟨5, _⟩ => ((-1 : ℚ) / (3 : ℚ), (-1 : ℚ) / (3 : ℚ))
+        | ⟨6, _⟩ => ((1 : ℚ) / (3 : ℚ), (-1 : ℚ))
+        | ⟨7, _⟩ => ((1 : ℚ) / (3 : ℚ), (-1 : ℚ) / (3 : ℚ)),
+      isStarshaped := by
+        intro i
+        fin_cases i
+        all_goals {
+          simp
+          unfold cross
+          simp
+          norm_num
+        },
+      simple := by
+        use ⟨5, by norm_num⟩
+        simp
+        norm_num
+        intro i
+        fin_cases i
+        all_goals simp,
+      }
+    have ha : admissible P := by
+      sorry
+    have hs : symmetric P := by
+      unfold symmetric
+      constructor
+      norm_num
+      intro i j h
+      fin_cases i
+      fin_cases j
+      all_goals simp [h]
+      all_goals sorry
+    have harea : area P = (4 : ℚ) / (3 : ℚ) := by
+      unfold area
+      simp only [cross]
+      sorry
+    exact ⟨P, ha, hs, harea⟩
 
 end polygons
 
@@ -81,7 +126,9 @@ namespace smoothDomains
   def admissible (f : ℝ → ℝ) : Prop :=
     (ContDiff ℝ (⊤ : ℕ∞) f) ∧
     (∀ x : ℝ, f x > 0 ∧ f (x + 2*π) = f x) ∧
-    (∀ p q : ℤ, Int.gcd p q = 1 → (∀ x : ℝ, angle (p, q) (cos x * deriv f x - sin x * f x, sin x * deriv f x + cos x * f x) = π/2 → (p * cos x + q * sin x) * f x ≥ 1))
+    (∀ p q : ℤ, Int.gcd p q = 1 →
+    (∀ x : ℝ, angle (p, q) (cos x * deriv f x - sin x * f x, sin x * deriv f x + cos x * f x) = π/2
+    → (p * cos x + q * sin x) * f x ≥ 1))
 
   def symmetric (f : ℝ → ℝ) : Prop :=
     ∀ x : ℝ, f (x + π) = f x
