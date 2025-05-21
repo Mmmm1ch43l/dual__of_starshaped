@@ -1,4 +1,5 @@
 import Mathlib
+--set_option maxHeartbeats 1000000
 
 namespace polygons
   open Rat
@@ -61,6 +62,7 @@ namespace polygons
   theorem systolicInequalityIsSharp :
       ∃ P : starshaped, admissible P ∧ symmetric P ∧
       area P = (4 : ℚ) / (3 : ℚ) := by
+    -- construct the polygon
     let P : starshaped := {
       n := 8,
       nonEmpty := by norm_num,
@@ -77,34 +79,52 @@ namespace polygons
         intro i
         fin_cases i
         all_goals {
-          simp
+          rw [Fin.ofNat']
+          norm_num
           unfold cross
-          simp
           norm_num
         },
       simple := by
         use ⟨5, by norm_num⟩
-        simp
+        constructor
         norm_num
         intro i
         fin_cases i
-        all_goals simp,
+        all_goals norm_num
       }
+    -- check that it's admissible
     have ha : admissible P := by
       sorry
+    -- check that it's symmetric
     have hs : symmetric P := by
       unfold symmetric
       constructor
       norm_num
       intro i j h
       fin_cases i
-      fin_cases j
-      all_goals simp [h]
-      all_goals sorry
+      all_goals {
+        fin_cases j
+        all_goals {
+          norm_num at h
+          try {
+            unfold P
+            norm_num
+          }
+        }
+      }
+    -- check that the area is really 4/3
     have harea : area P = (4 : ℚ) / (3 : ℚ) := by
       unfold area
-      simp only [cross]
-      sorry
+      unfold cross
+      unfold P
+      have hp : P.n = 8 := by norm_num
+      simp only [hp]
+      unfold Finset.sum
+      norm_num
+      unfold Fin.succ
+      norm_num
+      dsimp
+      norm_num
     exact ⟨P, ha, hs, harea⟩
 
 end polygons
@@ -118,9 +138,7 @@ namespace smoothDomains
   lemma rightAngle (u v : ℝ × ℝ)(o : u.1 * v.1 + u.2 * v.2 = 0)(p: u.1 * v.2 - u.2 * v.1 > 0) : angle u v = π/2 :=
     by
     unfold angle
-    rw [o, zero_div]
-    simp only [Real.arccos_zero]
-    rw [if_neg (not_lt_of_gt p)]
+    rw [o, zero_div, if_neg (not_lt_of_gt p)]
     norm_num
 
   def admissible (f : ℝ → ℝ) : Prop :=
