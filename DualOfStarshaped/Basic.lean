@@ -4,6 +4,9 @@ import Mathlib
 namespace polygons
   open Rat
 
+  instance coeIntPairToRatPair : Coe (ℤ × ℤ) (ℚ × ℚ) where
+    coe p := (↑p.1, ↑p.2)
+
   def dot (u v : ℚ × ℚ) : ℚ :=
     u.1 * v.1 + u.2 * v.2
 
@@ -35,7 +38,7 @@ namespace polygons
     ∀ i : Fin P.n, let j := P.succ i; let k := P.succ2 i; let l := P.succ3 i
     -- check no degenerate vertices
     (cross (P.vertices j - P.vertices i) (P.vertices k - P.vertices j) ≠ 0) ∧
-    ∀ p q : ℤ, Int.gcd p q = 1 →
+    ∀ p q : ℤ, Int.gcd p q = 1 ∧ dot (p, q) (P.vertices j) > 0 →
     -- check tangencies at vertices
     (cross (p, q) (rotateRight (P.vertices j - P.vertices i)) < 0 ∧
     cross (p, q) (rotateRight (P.vertices k - P.vertices j)) > 0 ∨
@@ -50,6 +53,52 @@ namespace polygons
     cross (p, q) (rotateRight (P.vertices j - P.vertices i)) > 0 ∧
     cross (p, q) (rotateRight (P.vertices l - P.vertices k)) < 0)
     → dot (p, q) (P.vertices j) ≥ 1)
+
+  def parrent (point : ℚ × ℚ) : ℤ × ℤ :=
+    let (x, y) := point
+    if x = 0 then
+      if y = 0 then (0, 0)
+      else if y > 0 then (0, 1)
+      else (0, -1)
+    else
+      if y = 0 then
+        if x > 0 then (1, 0)
+        else (-1, 0)
+      else
+        let p : ℤ := x.num * y.den
+        let q : ℤ := y.num * x.den
+        let g : ℤ := Int.gcd p q
+        (p / g, q / g)
+
+  -- hopefully this is easier to check
+  def admissible' (P : starshaped) : Prop :=
+    ∀ i : Fin P.n, let j := P.succ i; let k := P.succ2 i; let l := P.succ3 i
+    -- check no degenerate vertices
+    (cross (P.vertices j - P.vertices i) (P.vertices k - P.vertices j) ≠ 0) ∧
+    (∀ p q : ℤ, Int.gcd p q = 1 ∧ dot (p, q) (P.vertices j) > 0 →
+    -- check tangencies at vertices
+    (cross (p, q) (rotateRight (P.vertices j - P.vertices i)) < 0 ∧
+    cross (p, q) (rotateRight (P.vertices k - P.vertices j)) > 0 ∨
+    cross (p, q) (rotateRight (P.vertices j - P.vertices i)) > 0 ∧
+    cross (p, q) (rotateRight (P.vertices k - P.vertices j)) < 0
+    → dot (p, q) (parrent (P.vertices j)) ≥ 1)) ∧
+    -- check whether tangency at edge is real
+    (cross (P.vertices k - P.vertices j) (P.vertices j - P.vertices i) < 0 ∧
+    cross (P.vertices k - P.vertices j) (P.vertices l - P.vertices k) > 0 ∨
+    cross (P.vertices k - P.vertices j) (P.vertices j - P.vertices i) > 0 ∧
+    cross (P.vertices k - P.vertices j) (P.vertices l - P.vertices k) < 0)
+    -- check tangeny at edge
+    → dot (parrent (rotateRight (P.vertices k - P.vertices j))) (P.vertices j) ≥ 1
+
+  theorem admissibleEquivalence : ∀ P : starshaped,
+      admissible P ↔ admissible' P := by
+    intro P
+    constructor
+    case mp =>
+      unfold admissible admissible'
+      sorry
+    case mpr =>
+      sorry
 
   def symmetric (P : starshaped) : Prop :=
     P.n % 2 = 0 ∧
@@ -94,7 +143,17 @@ namespace polygons
       }
     -- check that it's admissible
     have ha : admissible P := by
-      sorry
+      suffices admissible' P from (admissibleEquivalence P).mpr this
+      unfold admissible'
+      intro i j k l
+      unfold P at i j k l
+      dsimp at i j k l
+
+      fin_cases i
+      all_goals {
+
+        sorry
+      }
     -- check that it's symmetric
     have hs : symmetric P := by
       unfold symmetric
